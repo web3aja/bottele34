@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import traceback
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -21,17 +22,24 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 USER_FILE = "users.json"
 
 # ===============================
-# LOAD & SAVE USER (ANTI RESET)
+# LOAD USER (ANTI ERROR)
 # ===============================
 def load_users():
-    if os.path.exists(USER_FILE):
-        with open(USER_FILE, "r") as f:
-            return set(json.load(f))
+    try:
+        if os.path.exists(USER_FILE):
+            with open(USER_FILE, "r") as f:
+                data = json.load(f)
+                return set(data if isinstance(data, list) else [])
+    except:
+        print("users.json rusak, reset...")
     return set()
 
 def save_users(users):
-    with open(USER_FILE, "w") as f:
-        json.dump(list(users), f)
+    try:
+        with open(USER_FILE, "w") as f:
+            json.dump(list(users), f)
+    except Exception as e:
+        print("Gagal save users:", e)
 
 users = load_users()
 
@@ -109,7 +117,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ===============================
-# AUTO BROADCAST (60 DETIK)
+# AUTO BROADCAST (60 DETIK TEST)
 # ===============================
 async def broadcast_vvip(context: ContextTypes.DEFAULT_TYPE):
     text = (
@@ -128,7 +136,7 @@ async def broadcast_vvip(context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
         except Exception as e:
-            print(f"Hapus user {user_id} karena error: {e}")
+            print(f"Hapus user {user_id} karena error:", e)
             users.discard(user_id)
             save_users(users)
 
@@ -182,12 +190,24 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    # ⏱️ TEST 60 DETIK
-    job_queue = app.job_queue
-    job_queue.run_repeating(broadcast_vvip, interval=60, first=10)
+    # JOB QUEUE AMAN
+    try:
+        job_queue = app.job_queue
+        if job_queue:
+            job_queue.run_repeating(broadcast_vvip, interval=60, first=10)
+            print("Broadcast aktif tiap 60 detik")
+        else:
+            print("JobQueue tidak aktif! Install extra package.")
+    except Exception as e:
+        print("JobQueue error:", e)
 
-    print("Bot aktif anti reset 🚀")
-    app.run_polling()
+    print("Bot aktif anti crash 🚀")
+
+    try:
+        app.run_polling(drop_pending_updates=True)
+    except Exception:
+        print("ERROR BESAR:")
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
