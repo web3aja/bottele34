@@ -9,6 +9,8 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 
 load_dotenv()
@@ -72,7 +74,7 @@ def vip_keyboard():
     ])
 
 # ===============================
-# TEXT PAYMENT (UPDATED)
+# TEXT PAYMENT
 # ===============================
 def get_payment_text(user, amount):
     name = user.last_name if user.last_name else user.first_name
@@ -139,6 +141,25 @@ async def payment_reminder(context: ContextTypes.DEFAULT_TYPE):
         )
     except Exception as e:
         print(f"Gagal kirim reminder ke {user_id}:", e)
+
+# ===============================
+# HANDLE FOTO (BUKTI TRANSFER)
+# ===============================
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "✅ <b>PEMBAYARAN SEDANG DI VERIFIKASI</b>\n\n"
+        "Bukti transfer kamu sudah kami terima.\n"
+        "Silakan tunggu sebentar, admin akan memproses.\n\n"
+        "🙏 Mohon tidak spam kirim bukti ya."
+    )
+
+    try:
+        await update.message.reply_text(
+            text=text,
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        print("Error handle photo:", e)
 
 # ===============================
 # START
@@ -262,8 +283,9 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    print("Bot aktif 1 jam mode 🚀")
+    print("Bot aktif full fitur 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
