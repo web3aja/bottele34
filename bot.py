@@ -86,7 +86,6 @@ def get_payment_text(user, amount):
         "Kirimkan bukti transfer ke sini.\n\n"
         "⚠️ <b>Catatan:</b>\n\n"
         "Lakukan pembayaran sebelum waktu habis (3 menit).\n\n"
-        "Pembayaran di bawah nominal dianggap sebagai sedekah.\n\n"
         "Tanpa bukti transfer, tidak akan masuk dalam list VVIP."
     )
 
