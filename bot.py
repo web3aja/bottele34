@@ -72,7 +72,7 @@ def vip_keyboard():
     ])
 
 # ===============================
-# TEXT PAYMENT
+# TEXT PAYMENT (UPDATED)
 # ===============================
 def get_payment_text(user, amount):
     name = user.last_name if user.last_name else user.first_name
@@ -85,12 +85,13 @@ def get_payment_text(user, amount):
         f"menggunakan QRIS berikut.\n\n"
         "Kirimkan bukti transfer ke sini.\n\n"
         "⚠️ <b>Catatan:</b>\n\n"
+        "Lakukan pembayaran sebelum waktu habis (3 menit).\n\n"
         "Pembayaran di bawah nominal dianggap sebagai sedekah.\n\n"
         "Tanpa bukti transfer, tidak akan masuk dalam list VVIP."
     )
 
 # ===============================
-# PROMO DELAY (10 DETIK TEST)
+# PROMO DELAY (1 JAM)
 # ===============================
 async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.data
@@ -150,12 +151,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users.add(user.id)
         save_users(users)
 
-    # DELAY PROMO 10 DETIK
+    # DELAY PROMO 1 JAM
     current_jobs = context.job_queue.get_jobs_by_name(str(user.id))
     if not current_jobs:
         context.job_queue.run_once(
             send_delayed_promo,
-            10,
+            3600,
             data=user.id,
             name=str(user.id)
         )
@@ -263,7 +264,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    print("Bot aktif test 10 detik 🚀")
+    print("Bot aktif 1 jam mode 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
