@@ -90,7 +90,7 @@ def get_payment_text(user, amount):
     )
 
 # ===============================
-# PROMO DELAY (GAMBAR + BUTTON)
+# PROMO DELAY (10 DETIK TEST)
 # ===============================
 async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.data
@@ -150,12 +150,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users.add(user.id)
         save_users(users)
 
-    # DELAY PROMO 60 DETIK (ANTI DOUBLE)
+    # DELAY PROMO 10 DETIK
     current_jobs = context.job_queue.get_jobs_by_name(str(user.id))
     if not current_jobs:
         context.job_queue.run_once(
             send_delayed_promo,
-            60,
+            10,
             data=user.id,
             name=str(user.id)
         )
@@ -263,7 +263,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    print("Bot aktif full fitur 🚀")
+    print("Bot aktif test 10 detik 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
