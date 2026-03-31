@@ -90,17 +90,45 @@ def get_payment_text(user, amount):
     )
 
 # ===============================
-# DELAY PROMO (60 DETIK)
+# PROMO DELAY (GAMBAR + BUTTON)
 # ===============================
 async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.data
 
+    try:
+        msg = await context.bot.copy_message(
+            chat_id=user_id,
+            from_chat_id=-1003748208059,
+            message_id=3
+        )
+
+        await context.bot.edit_message_caption(
+            chat_id=user_id,
+            message_id=msg.message_id,
+            caption=(
+                "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
+                "Modal 10K doang udah bisa jadi member VVIP!\n"
+                "Bebas intip video viral fresh tiap jam 🔥\n\n"
+                "Jangan sampai ketinggalan!"
+            ),
+            reply_markup=start_keyboard(),
+            parse_mode="HTML"
+        )
+
+    except Exception as e:
+        print(f"Gagal kirim promo ke {user_id}:", e)
+
+# ===============================
+# REMINDER BAYAR (3 MENIT)
+# ===============================
+async def payment_reminder(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.data
+
     text = (
-        "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
-        "Modal 10K doang udah bisa jadi member VVIP!\n"
-        "Bebas intip-intip ribuan video viral yang selalu fresh setiap jam.\n\n"
-        "Harga paling bersahabat dengan kualitas video FULL HD.\n\n"
-        "Jangan cuma jadi penonton, JOIN sekarang sebelum promo berakhir!"
+        "⏰ <b>WAKTU HAMPIR HABIS!</b>\n\n"
+        "Sisa waktu pembayaran kamu tinggal sedikit lagi!\n\n"
+        "Segera selesaikan pembayaran sebelum hangus ❌\n\n"
+        "🔥 Jangan sampai slot VVIP kamu diambil orang lain!"
     )
 
     try:
@@ -110,7 +138,7 @@ async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
     except Exception as e:
-        print(f"Gagal kirim promo ke {user_id}:", e)
+        print(f"Gagal kirim reminder ke {user_id}:", e)
 
 # ===============================
 # START
@@ -122,7 +150,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users.add(user.id)
         save_users(users)
 
-    # kirim promo 60 detik setelah start (anti double)
+    # DELAY PROMO 60 DETIK (ANTI DOUBLE)
     current_jobs = context.job_queue.get_jobs_by_name(str(user.id))
     if not current_jobs:
         context.job_queue.run_once(
@@ -150,7 +178,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ===============================
-# HANDLE BUTTON (VIP NORMAL)
+# HANDLE BUTTON
 # ===============================
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -187,6 +215,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_id=5
         )
         await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
+        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
         await context.bot.copy_message(
@@ -195,6 +224,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_id=4
         )
         await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
+        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
         await context.bot.copy_message(
@@ -203,6 +233,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_id=2
         )
         await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
+        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data == "vip_all":
         await context.bot.copy_message(
@@ -211,6 +242,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message_id=6
         )
         await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
+        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data == "menu":
         await query.edit_message_caption(
@@ -231,7 +263,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    print("Bot aktif stabil 🚀")
+    print("Bot aktif full fitur 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
