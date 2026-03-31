@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -17,6 +18,22 @@ logging.basicConfig(
 )
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+USER_FILE = "users.json"
+
+# ===============================
+# LOAD & SAVE USER (ANTI RESET)
+# ===============================
+def load_users():
+    if os.path.exists(USER_FILE):
+        with open(USER_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_users(users):
+    with open(USER_FILE, "w") as f:
+        json.dump(list(users), f)
+
+users = load_users()
 
 # ===============================
 # KEYBOARD START
@@ -47,7 +64,7 @@ def vip_keyboard():
     ])
 
 # ===============================
-# TEXT PAYMENT DINAMIS
+# TEXT PAYMENT
 # ===============================
 def get_payment_text(user, amount):
     name = user.last_name if user.last_name else user.first_name
@@ -69,6 +86,11 @@ def get_payment_text(user, amount):
 # ===============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+
+    if user.id not in users:
+        users.add(user.id)
+        save_users(users)
+
     name = user.last_name if user.last_name else user.first_name
     mention = f'<a href="tg://user?id={user.id}">{name}</a>'
 
@@ -81,12 +103,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.edit_message_caption(
         chat_id=update.effective_chat.id,
         message_id=msg.message_id,
-        caption=(
-            f"Halo {mention} selamat datang di <b>VVIP HARIAN PEMERSATU BANGSA</b>"
-        ),
+        caption=f"Halo {mention} selamat datang di <b>VVIP HARIAN PEMERSATU BANGSA</b>",
         reply_markup=start_keyboard(),
         parse_mode="HTML"
     )
+
+# ===============================
+# AUTO BROADCAST (60 DETIK)
+# ===============================
+async def broadcast_vvip(context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
+        "Modal 10K doang udah bisa jadi member VVIP!\n"
+        "Bebas intip-intip ribuan video viral yang selalu fresh setiap jam.\n\n"
+        "Harga paling bersahabat dengan kualitas video FULL HD.\n\n"
+        "Jangan cuma jadi penonton, JOIN sekarang sebelum promo berakhir!"
+    )
+
+    for user_id in list(users):
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode="HTML"
+            )
+        except Exception as e:
+            print(f"Hapus user {user_id} karena error: {e}")
+            users.discard(user_id)
+            save_users(users)
 
 # ===============================
 # HANDLE BUTTON
@@ -96,7 +140,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = query.from_user
     await query.answer()
 
-    # ===== MENU VVIP =====
     if query.data == "vvip":
         await query.edit_message_caption(
             caption="<b>📚 Daftar VVIP</b>\n\nPilih paket 👇",
@@ -104,7 +147,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-    # ===== REFERRAL =====
     elif query.data == "referral":
         bot_username = (await context.bot.get_me()).username
         ref_link = f"https://t.me/{bot_username}?start={user.id}"
@@ -121,43 +163,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-    # ===== 1-2 (10K) =====
-    elif query.data in ["vip_hijabers", "vip_tiktok"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=5
-        )
-        await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
-
-    # ===== 3-5 (15K) =====
-    elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=4
-        )
-        await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
-
-    # ===== 6-8 (20K) =====
-    elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=2
-        )
-        await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
-
-    # ===== 9 (50K) =====
-    elif query.data == "vip_all":
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=6
-        )
-        await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
-
-    # ===== BACK =====
     elif query.data == "menu":
         await query.edit_message_caption(
             caption="Klik tombol di bawah untuk membuka menu 🔥",
@@ -177,7 +182,11 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    print("Bot aktif bro 🚀")
+    # ⏱️ TEST 60 DETIK
+    job_queue = app.job_queue
+    job_queue.run_repeating(broadcast_vvip, interval=60, first=10)
+
+    print("Bot aktif anti reset 🚀")
     app.run_polling()
 
 if __name__ == "__main__":
