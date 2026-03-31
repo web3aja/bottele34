@@ -22,11 +22,14 @@ logging.basicConfig(
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # ===============================
-# KEYBOARD START (VVIP)
+# KEYBOARD START
 # ===============================
 def start_keyboard():
     keyboard = [
-        [InlineKeyboardButton("🔥 VVIP", callback_data="vvip")]
+        [
+            InlineKeyboardButton("🔥 VVIP", callback_data="vvip"),
+            InlineKeyboardButton("📢 Undang Teman", callback_data="referral"),
+        ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -49,26 +52,24 @@ def vip_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 # ===============================
-# START COMMAND
+# START
 # ===============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = user.last_name if user.last_name else user.first_name
 
-    # Kirim gambar dari channel (sesuai link kamu)
     sent_msg = await context.bot.copy_message(
         chat_id=update.effective_chat.id,
         from_chat_id=-1003748208059,
         message_id=3
     )
 
-    # Edit caption + tombol
     await context.bot.edit_message_caption(
         chat_id=update.effective_chat.id,
         message_id=sent_msg.message_id,
         caption=(
             f"<b>Halo selamat datang di Asupan VVIP Update Harian {name}</b> 👋\n\n"
-            "Klik tombol di bawah untuk membuka menu VVIP 🔥"
+            "Klik tombol di bawah untuk membuka menu 🔥"
         ),
         reply_markup=start_keyboard(),
         parse_mode="HTML"
@@ -81,15 +82,29 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    # ====== MASUK MENU VVIP ======
+    user = query.from_user
+
+    # ====== MENU VVIP ======
     if query.data == "vvip":
         await query.edit_message_caption(
             caption=(
                 "<b>📚 Daftar VVIP Bot</b>\n\n"
-                "Berikut daftar paket eksklusif:\n"
-                "Silakan pilih salah satu 👇"
+                "Silakan pilih salah satu paket 👇"
             ),
             reply_markup=vip_keyboard(),
+            parse_mode="HTML"
+        )
+
+    # ====== REFERRAL ======
+    elif query.data == "referral":
+        bot_username = (await context.bot.get_me()).username
+        ref_link = f"https://t.me/{bot_username}?start={user.id}"
+
+        await query.message.reply_text(
+            f"📢 <b>UNDANG TEMAN</b>\n\n"
+            "Undang <b>10 teman</b> untuk membuka fitur VVIP GRATIS 🔥\n\n"
+            f"🔗 Link referral kamu:\n{ref_link}\n\n"
+            "Bagikan ke teman-teman kamu sekarang!",
             parse_mode="HTML"
         )
 
@@ -121,10 +136,10 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "vip_all":
         text = "🔥 Semua VIP:\nhttps://example.com/allvip"
 
-    # ====== KEMBALI KE MENU ======
+    # ====== KEMBALI ======
     elif query.data == "menu":
         await query.edit_message_caption(
-            caption="Klik tombol di bawah untuk membuka menu VVIP 🔥",
+            caption="Klik tombol di bawah untuk membuka menu 🔥",
             reply_markup=start_keyboard()
         )
         return
@@ -132,7 +147,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         return
 
-    # Kirim hasil klik
     await query.message.reply_text(text)
 
 # ===============================
