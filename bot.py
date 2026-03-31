@@ -9,6 +9,9 @@ from telegram.ext import (
     ContextTypes,
 )
 
+# ===============================
+# LOAD ENV
+# ===============================
 load_dotenv()
 
 logging.basicConfig(
@@ -19,98 +22,57 @@ logging.basicConfig(
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # ===============================
-# CHANNEL WAJIB JOIN
+# KEYBOARD START (VVIP)
 # ===============================
-CHANNELS = [
-    {"username": "@LunaaAirDrop", "link": "https://t.me/LunaaAirDrop"},
-    {"username": "@gamegilacuan", "link": "https://t.me/gamegilacuan"},
-    {"username": "@gamecuanngila", "link": "https://t.me/gamecuanngila"},
-    {"username": "@gamegilacuan", "link": "https://t.me/gamegilacuan"},
-]
-
-# ===============================
-# MENU UTAMA
-# ===============================
-def get_main_menu_keyboard():
+def start_keyboard():
     keyboard = [
-        [
-            InlineKeyboardButton("1. Diamond", callback_data="Diamond"),
-            InlineKeyboardButton("2. Cash", callback_data="Cash"),
-        ],
-        [
-            InlineKeyboardButton("3. Poin", callback_data="Poin"),
-            InlineKeyboardButton("4. Lokasi", callback_data="Lokasi"),
-        ],
-        [
-            InlineKeyboardButton("🔄 Coba Lagi", callback_data="retry"),
-        ]
+        [InlineKeyboardButton("🔥 VVIP", callback_data="vvip")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
-
 # ===============================
-# KEYBOARD JOIN (4 KOTAK)
+# KEYBOARD VIP MENU
 # ===============================
-def get_join_keyboard():
+def vip_keyboard():
     keyboard = [
-        [
-            InlineKeyboardButton("📢 JOIN CHANNEL", url=CHANNELS[0]["link"]),
-            InlineKeyboardButton("📢 JOIN CHANNEL", url=CHANNELS[1]["link"]),
-        ],
-        [
-            InlineKeyboardButton("📢 JOIN CHANNEL", url=CHANNELS[2]["link"]),
-            InlineKeyboardButton("📢 JOIN CHANNEL", url=CHANNELS[3]["link"]),
-        ],
-        [
-            InlineKeyboardButton("🔄 CEK LAGI", callback_data="check_join")
-        ]
+        [InlineKeyboardButton("📁 VIP HIJABERS", callback_data="vip_hijabers")],
+        [InlineKeyboardButton("📁 VIP TIKTOK", callback_data="vip_tiktok")],
+        [InlineKeyboardButton("📁 VIP OME TV", callback_data="vip_ometv")],
+        [InlineKeyboardButton("📁 VIP KOLPRI", callback_data="vip_kolpri")],
+        [InlineKeyboardButton("📁 VIP PREMIUM", callback_data="vip_premium")],
+        [InlineKeyboardButton("📁 VIP RANDOM", callback_data="vip_random")],
+        [InlineKeyboardButton("📁 VIP BOCIL [A]", callback_data="vip_bocil_a")],
+        [InlineKeyboardButton("📁 VIP BOCIL [B]", callback_data="vip_bocil_b")],
+        [InlineKeyboardButton("🛒 Ambil Semua VIP", callback_data="vip_all")],
+        [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
-
-
-# ===============================
-# CEK APAKAH SUDAH JOIN
-# ===============================
-async def is_user_joined(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    try:
-        # User harus join semua channel
-        for ch in CHANNELS:
-            member = await context.bot.get_chat_member(ch["username"], user_id)
-            if member.status not in ["member", "administrator", "creator"]:
-                return False
-        return True
-    except:
-        return False
-
 
 # ===============================
 # START COMMAND
 # ===============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    name = user.first_name
+    name = user.last_name if user.last_name else user.first_name
 
-    joined = await is_user_joined(update, context)
-
-    if not joined:
-        await update.message.reply_text(
-            f"<b>HELLO {name}</b> 👋\n\n"
-            "ANDA HARUS BERGABUNG DI SEMUA CHANNEL/GRUP SAYA TERLEBIH DAHULU\n"
-            "UNTUK MELIHAT FILE YANG SAYA BAGIKAN\n\n"
-            "SILAHKAN JOIN KE CHANNEL TERLEBIH DAHULU 👇",
-            reply_markup=get_join_keyboard(),
-            parse_mode="HTML"
-        )
-        return
-
-    await update.message.reply_text(
-        f"<b>Halo {name}!</b> 👋\n\n"
-        "Selamat datang.\nSilakan pilih layanan di bawah ini:",
-        reply_markup=get_main_menu_keyboard(),
-        parse_mode="HTML"
+    # Kirim gambar dari channel (sesuai link kamu)
+    sent_msg = await context.bot.copy_message(
+        chat_id=update.effective_chat.id,
+        from_chat_id=-1003748208059,
+        message_id=3
     )
 
+    # Edit caption + tombol
+    await context.bot.edit_message_caption(
+        chat_id=update.effective_chat.id,
+        message_id=sent_msg.message_id,
+        caption=(
+            f"<b>Halo selamat datang di Asupan VVIP Update Harian {name}</b> 👋\n\n"
+            "Klik tombol di bawah untuk membuka menu VVIP 🔥"
+        ),
+        reply_markup=start_keyboard(),
+        parse_mode="HTML"
+    )
 
 # ===============================
 # HANDLE BUTTON
@@ -119,59 +81,66 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    joined = await is_user_joined(update, context)
-
-    if not joined:
-        await query.edit_message_text(
-            "🚫 Kamu belum join semua channel!\nSilakan join dulu 👇",
-            reply_markup=get_join_keyboard()
+    # ====== MASUK MENU VVIP ======
+    if query.data == "vvip":
+        await query.edit_message_caption(
+            caption=(
+                "<b>📚 Daftar VVIP Bot</b>\n\n"
+                "Berikut daftar paket eksklusif:\n"
+                "Silakan pilih salah satu 👇"
+            ),
+            reply_markup=vip_keyboard(),
+            parse_mode="HTML"
         )
-        return
 
-    if query.data == "Diamond":
-        text = "💎 Link Diamond:\nhttps://link-diamond.com"
+    # ====== LIST VIP ======
+    elif query.data == "vip_hijabers":
+        text = "📁 VIP HIJABERS\nhttps://example.com/hijabers"
 
-    elif query.data == "Cash":
-        text = "💵 Link Cash:\nhttps://link-cash.com"
+    elif query.data == "vip_tiktok":
+        text = "📁 VIP TIKTOK\nhttps://example.com/tiktok"
 
-    elif query.data == "Poin":
-        text = "🎯 Link Poin:\nhttps://link-poin.com"
+    elif query.data == "vip_ometv":
+        text = "📁 VIP OME TV\nhttps://example.com/ometv"
 
-    elif query.data == "Lokasi":
-        text = "📍 Link Lokasi:\nhttps://link-lokasi.com"
+    elif query.data == "vip_kolpri":
+        text = "📁 VIP KOLPRI\nhttps://example.com/kolpri"
 
-    elif query.data == "retry":
-        await query.edit_message_text(
-            "Menu sudah di-refresh bg 👇",
-            reply_markup=get_main_menu_keyboard()
+    elif query.data == "vip_premium":
+        text = "📁 VIP PREMIUM\nhttps://example.com/premium"
+
+    elif query.data == "vip_random":
+        text = "📁 VIP RANDOM\nhttps://example.com/random"
+
+    elif query.data == "vip_bocil_a":
+        text = "📁 VIP BOCIL A\nhttps://example.com/bocilA"
+
+    elif query.data == "vip_bocil_b":
+        text = "📁 VIP BOCIL B\nhttps://example.com/bocilB"
+
+    elif query.data == "vip_all":
+        text = "🔥 Semua VIP:\nhttps://example.com/allvip"
+
+    # ====== KEMBALI KE MENU ======
+    elif query.data == "menu":
+        await query.edit_message_caption(
+            caption="Klik tombol di bawah untuk membuka menu VVIP 🔥",
+            reply_markup=start_keyboard()
         )
-        return
-
-    elif query.data == "check_join":
-        if joined:
-            await query.edit_message_text(
-                "✅ Terima kasih sudah join semua channel!\nSilakan pilih layanan:",
-                reply_markup=get_main_menu_keyboard()
-            )
-        else:
-            await query.answer("❌ Kamu belum join semua channel!", show_alert=True)
         return
 
     else:
         return
 
-    await query.edit_message_text(
-        text,
-        reply_markup=get_main_menu_keyboard()
-    )
-
+    # Kirim hasil klik
+    await query.message.reply_text(text)
 
 # ===============================
 # MAIN
 # ===============================
 def main():
     if not BOT_TOKEN:
-        print("TOKEN belum diisi di file .env!")
+        print("TOKEN belum diisi!")
         return
 
     app = Application.builder().token(BOT_TOKEN).build()
@@ -182,6 +151,8 @@ def main():
     print("Bot aktif bro 🚀")
     app.run_polling()
 
-
+# ===============================
+# RUN
+# ===============================
 if __name__ == "__main__":
     main()
