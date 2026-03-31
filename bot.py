@@ -9,9 +9,6 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# ===============================
-# LOAD ENV
-# ===============================
 load_dotenv()
 
 logging.basicConfig(
@@ -25,31 +22,47 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 # KEYBOARD START
 # ===============================
 def start_keyboard():
-    keyboard = [
+    return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("🔥 VVIP", callback_data="vvip"),
             InlineKeyboardButton("📢 Undang Teman", callback_data="referral"),
         ]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    ])
 
 # ===============================
-# KEYBOARD VIP MENU
+# KEYBOARD VIP
 # ===============================
 def vip_keyboard():
-    keyboard = [
+    return InlineKeyboardMarkup([
         [InlineKeyboardButton("📁 VIP HIJABERS", callback_data="vip_hijabers")],
         [InlineKeyboardButton("📁 VIP TIKTOK", callback_data="vip_tiktok")],
-        [InlineKeyboardButton("📁 VIP RUSSIA", callback_data="vip_ometv")],
-        [InlineKeyboardButton("📁 VIP INDONESIA", callback_data="vip_kolpri")],
-        [InlineKeyboardButton("📁 VIP RANDOM", callback_data="vip_premium")],
-        [InlineKeyboardButton("📁 VIP PRENIUM", callback_data="vip_random")],
+        [InlineKeyboardButton("📁 VIP OME TV", callback_data="vip_ometv")],
+        [InlineKeyboardButton("📁 VIP KOLPRI", callback_data="vip_kolpri")],
+        [InlineKeyboardButton("📁 VIP PREMIUM", callback_data="vip_premium")],
+        [InlineKeyboardButton("📁 VIP RANDOM", callback_data="vip_random")],
         [InlineKeyboardButton("📁 VIP BOCIL [A]", callback_data="vip_bocil_a")],
         [InlineKeyboardButton("📁 VIP BOCIL [B]", callback_data="vip_bocil_b")],
         [InlineKeyboardButton("🛒 Ambil Semua VIP", callback_data="vip_all")],
         [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    ])
+
+# ===============================
+# TEXT PAYMENT
+# ===============================
+def get_payment_text(user):
+    name = user.last_name if user.last_name else user.first_name
+    mention = f'<a href="tg://user?id={user.id}">{name}</a>'
+
+    return (
+        f"👋 Hallo {mention}\n\n"
+        "Silakan lakukan pembayaran sebesar:\n"
+        "<b>Rp. 10.000</b>\n"
+        "menggunakan QRIS berikut.\n\n"
+        "Kirimkan bukti transfer ke sini.\n\n"
+        "⚠️ <b>Catatan:</b>\n"
+        "Pembayaran di bawah Rp. 10.000 dianggap sebagai sedekah.\n\n"
+        "Tanpa bukti transfer, tidak akan masuk dalam list VVIP."
+    )
 
 # ===============================
 # START
@@ -58,7 +71,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = user.last_name if user.last_name else user.first_name
 
-    sent_msg = await context.bot.copy_message(
+    msg = await context.bot.copy_message(
         chat_id=update.effective_chat.id,
         from_chat_id=-1003748208059,
         message_id=3
@@ -66,11 +79,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.edit_message_caption(
         chat_id=update.effective_chat.id,
-        message_id=sent_msg.message_id,
-        caption=(
-            f"<b>Halo selamat datang di Asupan VVIP Update Harian {name}</b> 👋\n\n"
-            "Klik tombol di bawah untuk membuka menu 🔥"
-        ),
+        message_id=msg.message_id,
+        caption=f"<b>Halo selamat datang di Asupan VVIP Update Harian {name}</b> 👋",
         reply_markup=start_keyboard(),
         parse_mode="HTML"
     )
@@ -80,74 +90,76 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ===============================
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    user = query.from_user
     await query.answer()
 
-    user = query.from_user
-
-    # ====== MENU VVIP ======
+    # ===== MENU VVIP =====
     if query.data == "vvip":
         await query.edit_message_caption(
-            caption=(
-                "<b>📚 Daftar VVIP Bot</b>\n\n"
-                "Silakan pilih salah satu paket 👇"
-            ),
+            caption="<b>📚 Daftar VVIP Bot</b>\n\nPilih paket 👇",
             reply_markup=vip_keyboard(),
             parse_mode="HTML"
         )
 
-    # ====== REFERRAL ======
+    # ===== REFERRAL =====
     elif query.data == "referral":
         bot_username = (await context.bot.get_me()).username
         ref_link = f"https://t.me/{bot_username}?start={user.id}"
 
-        await query.message.reply_text(
-            f"📢 <b>UNDANG TEMAN</b>\n\n"
-            "Undang <b>10 teman</b> untuk membuka fitur VVIP GRATIS 🔥\n\n"
-            f"🔗 Link referral kamu:\n{ref_link}\n\n"
-            "Bagikan ke teman-teman kamu sekarang!",
+        await query.edit_message_caption(
+            caption=(
+                "📢 <b>UNDANG TEMAN</b>\n\n"
+                "Undang <b>10 teman</b> untuk membuka fitur VVIP GRATIS 🔥\n\n"
+                f"🔗 Link kamu:\n{ref_link}"
+            ),
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
+            ]),
             parse_mode="HTML"
         )
 
-    # ====== LIST VIP ======
-    elif query.data == "vip_hijabers":
-        text = "📁 VIP HIJABERS\nhttps://example.com/hijabers"
+    # ===== VIP BUTTON (1-2) =====
+    elif query.data in ["vip_hijabers", "vip_tiktok"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=5
+        )
+        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
 
-    elif query.data == "vip_tiktok":
-        text = "📁 VIP TIKTOK\nhttps://example.com/tiktok"
+    # ===== VIP BUTTON (3-5) =====
+    elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=4
+        )
+        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
 
-    elif query.data == "vip_ometv":
-        text = "📁 VIP OME TV\nhttps://example.com/ometv"
+    # ===== VIP BUTTON (6-8) =====
+    elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=2
+        )
+        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
 
-    elif query.data == "vip_kolpri":
-        text = "📁 VIP KOLPRI\nhttps://example.com/kolpri"
-
-    elif query.data == "vip_premium":
-        text = "📁 VIP PREMIUM\nhttps://example.com/premium"
-
-    elif query.data == "vip_random":
-        text = "📁 VIP RANDOM\nhttps://example.com/random"
-
-    elif query.data == "vip_bocil_a":
-        text = "📁 VIP BOCIL A\nhttps://example.com/bocilA"
-
-    elif query.data == "vip_bocil_b":
-        text = "📁 VIP BOCIL B\nhttps://example.com/bocilB"
-
+    # ===== VIP ALL =====
     elif query.data == "vip_all":
-        text = "🔥 Semua VIP:\nhttps://example.com/allvip"
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=6
+        )
+        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
 
-    # ====== KEMBALI ======
+    # ===== BACK MENU =====
     elif query.data == "menu":
         await query.edit_message_caption(
             caption="Klik tombol di bawah untuk membuka menu 🔥",
             reply_markup=start_keyboard()
         )
-        return
-
-    else:
-        return
-
-    await query.message.reply_text(text)
 
 # ===============================
 # MAIN
