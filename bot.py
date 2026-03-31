@@ -22,7 +22,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 USER_FILE = "users.json"
 
 # ===============================
-# LOAD USER (ANTI ERROR)
+# LOAD & SAVE USER
 # ===============================
 def load_users():
     try:
@@ -90,6 +90,29 @@ def get_payment_text(user, amount):
     )
 
 # ===============================
+# DELAY PROMO (60 DETIK)
+# ===============================
+async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.data
+
+    text = (
+        "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
+        "Modal 10K doang udah bisa jadi member VVIP!\n"
+        "Bebas intip-intip ribuan video viral yang selalu fresh setiap jam.\n\n"
+        "Harga paling bersahabat dengan kualitas video FULL HD.\n\n"
+        "Jangan cuma jadi penonton, JOIN sekarang sebelum promo berakhir!"
+    )
+
+    try:
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=text,
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        print(f"Gagal kirim promo ke {user_id}:", e)
+
+# ===============================
 # START
 # ===============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -98,6 +121,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id not in users:
         users.add(user.id)
         save_users(users)
+
+    # kirim promo 60 detik setelah start (anti double)
+    current_jobs = context.job_queue.get_jobs_by_name(str(user.id))
+    if not current_jobs:
+        context.job_queue.run_once(
+            send_delayed_promo,
+            60,
+            data=user.id,
+            name=str(user.id)
+        )
 
     name = user.last_name if user.last_name else user.first_name
     mention = f'<a href="tg://user?id={user.id}">{name}</a>'
@@ -117,31 +150,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ===============================
-# AUTO BROADCAST (60 DETIK TEST)
-# ===============================
-async def broadcast_vvip(context: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
-        "Modal 10K doang udah bisa jadi member VVIP!\n"
-        "Bebas intip-intip ribuan video viral yang selalu fresh setiap jam.\n\n"
-        "Harga paling bersahabat dengan kualitas video FULL HD.\n\n"
-        "Jangan cuma jadi penonton, JOIN sekarang sebelum promo berakhir!"
-    )
-
-    for user_id in list(users):
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=text,
-                parse_mode="HTML"
-            )
-        except Exception as e:
-            print(f"Hapus user {user_id} karena error:", e)
-            users.discard(user_id)
-            save_users(users)
-
-# ===============================
-# HANDLE BUTTON
+# HANDLE BUTTON (VIP NORMAL)
 # ===============================
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -171,6 +180,38 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
+    elif query.data in ["vip_hijabers", "vip_tiktok"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=5
+        )
+        await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
+
+    elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=4
+        )
+        await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
+
+    elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=2
+        )
+        await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
+
+    elif query.data == "vip_all":
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=6
+        )
+        await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
+
     elif query.data == "menu":
         await query.edit_message_caption(
             caption="Klik tombol di bawah untuk membuka menu 🔥",
@@ -190,23 +231,12 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_button))
 
-    # JOB QUEUE AMAN
-    try:
-        job_queue = app.job_queue
-        if job_queue:
-            job_queue.run_repeating(broadcast_vvip, interval=60, first=10)
-            print("Broadcast aktif tiap 60 detik")
-        else:
-            print("JobQueue tidak aktif! Install extra package.")
-    except Exception as e:
-        print("JobQueue error:", e)
-
-    print("Bot aktif anti crash 🚀")
+    print("Bot aktif stabil 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
     except Exception:
-        print("ERROR BESAR:")
+        print("ERROR:")
         traceback.print_exc()
 
 if __name__ == "__main__":
