@@ -47,20 +47,20 @@ def vip_keyboard():
     ])
 
 # ===============================
-# TEXT PAYMENT
+# TEXT PAYMENT DINAMIS
 # ===============================
-def get_payment_text(user):
+def get_payment_text(user, amount):
     name = user.last_name if user.last_name else user.first_name
     mention = f'<a href="tg://user?id={user.id}">{name}</a>'
 
     return (
         f"👋 Hallo {mention}\n\n"
-        "Silakan lakukan pembayaran sebesar:\n"
-        "<b>Rp. 10.000</b>\n"
-        "menggunakan QRIS berikut.\n\n"
+        f"Silakan lakukan pembayaran sebesar:\n"
+        f"<b>Rp. {amount}</b>\n"
+        f"menggunakan QRIS berikut.\n\n"
         "Kirimkan bukti transfer ke sini.\n\n"
-        "⚠️ <b>Catatan:</b>\n"
-        "Pembayaran di bawah Rp. 10.000 dianggap sebagai sedekah.\n\n"
+        "⚠️ <b>Catatan:</b>\n\n"
+        "Pembayaran di bawah nominal dianggap sebagai sedekah.\n\n"
         "Tanpa bukti transfer, tidak akan masuk dalam list VVIP."
     )
 
@@ -70,6 +70,7 @@ def get_payment_text(user):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = user.last_name if user.last_name else user.first_name
+    mention = f'<a href="tg://user?id={user.id}">{name}</a>'
 
     msg = await context.bot.copy_message(
         chat_id=update.effective_chat.id,
@@ -80,7 +81,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.edit_message_caption(
         chat_id=update.effective_chat.id,
         message_id=msg.message_id,
-        caption=f"<b>Halo selamat datang di Asupan VVIP Update Harian {name}</b> 👋",
+        caption=(
+            f"Halo {mention} selamat datang di <b>VVIP HARIAN PEMERSATU BANGSA</b>"
+        ),
         reply_markup=start_keyboard(),
         parse_mode="HTML"
     )
@@ -96,7 +99,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ===== MENU VVIP =====
     if query.data == "vvip":
         await query.edit_message_caption(
-            caption="<b>📚 Daftar VVIP Bot</b>\n\nPilih paket 👇",
+            caption="<b>📚 Daftar VVIP</b>\n\nPilih paket 👇",
             reply_markup=vip_keyboard(),
             parse_mode="HTML"
         )
@@ -118,43 +121,43 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-    # ===== VIP BUTTON (1-2) =====
+    # ===== 1-2 (10K) =====
     elif query.data in ["vip_hijabers", "vip_tiktok"]:
         await context.bot.copy_message(
             chat_id=query.message.chat_id,
             from_chat_id=-1003748208059,
             message_id=5
         )
-        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
+        await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
 
-    # ===== VIP BUTTON (3-5) =====
+    # ===== 3-5 (15K) =====
     elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
         await context.bot.copy_message(
             chat_id=query.message.chat_id,
             from_chat_id=-1003748208059,
             message_id=4
         )
-        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
+        await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
 
-    # ===== VIP BUTTON (6-8) =====
+    # ===== 6-8 (20K) =====
     elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
         await context.bot.copy_message(
             chat_id=query.message.chat_id,
             from_chat_id=-1003748208059,
             message_id=2
         )
-        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
+        await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
 
-    # ===== VIP ALL =====
+    # ===== 9 (50K) =====
     elif query.data == "vip_all":
         await context.bot.copy_message(
             chat_id=query.message.chat_id,
             from_chat_id=-1003748208059,
             message_id=6
         )
-        await query.message.reply_text(get_payment_text(user), parse_mode="HTML")
+        await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
 
-    # ===== BACK MENU =====
+    # ===== BACK =====
     elif query.data == "menu":
         await query.edit_message_caption(
             caption="Klik tombol di bawah untuk membuka menu 🔥",
@@ -177,8 +180,5 @@ def main():
     print("Bot aktif bro 🚀")
     app.run_polling()
 
-# ===============================
-# RUN
-# ===============================
 if __name__ == "__main__":
     main()
