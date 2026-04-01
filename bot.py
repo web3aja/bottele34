@@ -176,7 +176,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.edit_message_caption(
         chat_id=update.effective_chat.id,
         message_id=msg.message_id,
-        caption=f"Halo {mention} selamat datang di <b>VVIP HARIAN PEMERSATU BANGSA</b>",
+        caption=f"Halo {mention} selamat datang di <b>VVIP PEMERSATU BANGSA</b>",
         reply_markup=start_keyboard(),
         parse_mode="HTML"
     )
