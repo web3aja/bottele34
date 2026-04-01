@@ -92,33 +92,32 @@ def get_payment_text(user, amount):
     )
 
 # ===============================
-# PROMO DELAY (1 JAM)
+# PROMO (DIKIRIM TIAP JAM)
 # ===============================
-async def send_delayed_promo(context: ContextTypes.DEFAULT_TYPE):
-    user_id = context.job.data
+async def send_hourly_promo(context: ContextTypes.DEFAULT_TYPE):
+    for user_id in users:
+        try:
+            msg = await context.bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=-1003748208059,
+                message_id=3
+            )
 
-    try:
-        msg = await context.bot.copy_message(
-            chat_id=user_id,
-            from_chat_id=-1003748208059,
-            message_id=3
-        )
+            await context.bot.edit_message_caption(
+                chat_id=user_id,
+                message_id=msg.message_id,
+                caption=(
+                    "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
+                    "Modal 10K doang udah bisa jadi member VVIP!\n"
+                    "Bebas intip video viral fresh tiap jam 🔥\n\n"
+                    "Jangan sampai ketinggalan!"
+                ),
+                reply_markup=start_keyboard(),
+                parse_mode="HTML"
+            )
 
-        await context.bot.edit_message_caption(
-            chat_id=user_id,
-            message_id=msg.message_id,
-            caption=(
-                "🔥 <b>BIG PROMO JOIN VVIP MEDIA 10K 💎</b>\n\n"
-                "Modal 10K doang udah bisa jadi member VVIP!\n"
-                "Bebas intip video viral fresh tiap jam 🔥\n\n"
-                "Jangan sampai ketinggalan!"
-            ),
-            reply_markup=start_keyboard(),
-            parse_mode="HTML"
-        )
-
-    except Exception as e:
-        print(f"Gagal kirim promo ke {user_id}:", e)
+        except Exception as e:
+            print(f"Gagal kirim ke {user_id}:", e)
 
 # ===============================
 # REMINDER BAYAR (3 MENIT)
@@ -143,7 +142,7 @@ async def payment_reminder(context: ContextTypes.DEFAULT_TYPE):
         print(f"Gagal kirim reminder ke {user_id}:", e)
 
 # ===============================
-# HANDLE FOTO (BUKTI TRANSFER)
+# HANDLE FOTO
 # ===============================
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
@@ -153,13 +152,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🙏 Mohon tidak spam kirim bukti ya."
     )
 
-    try:
-        await update.message.reply_text(
-            text=text,
-            parse_mode="HTML"
-        )
-    except Exception as e:
-        print("Error handle photo:", e)
+    await update.message.reply_text(text, parse_mode="HTML")
 
 # ===============================
 # START
@@ -170,16 +163,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id not in users:
         users.add(user.id)
         save_users(users)
-
-    # DELAY PROMO 1 JAM
-    current_jobs = context.job_queue.get_jobs_by_name(str(user.id))
-    if not current_jobs:
-        context.job_queue.run_once(
-            send_delayed_promo,
-            3600,
-            data=user.id,
-            name=str(user.id)
-        )
 
     name = user.last_name if user.last_name else user.first_name
     mention = f'<a href="tg://user?id={user.id}">{name}</a>'
@@ -230,38 +213,22 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data in ["vip_hijabers", "vip_tiktok"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=5
-        )
+        await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=5)
         await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
         context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=4
-        )
+        await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=4)
         await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
         context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=2
-        )
+        await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=2)
         await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
         context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data == "vip_all":
-        await context.bot.copy_message(
-            chat_id=query.message.chat_id,
-            from_chat_id=-1003748208059,
-            message_id=6
-        )
+        await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=6)
         await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
         context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
@@ -285,7 +252,10 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    print("Bot aktif full fitur 🚀")
+    # PROMO TIAP 1 JAM
+    app.job_queue.run_repeating(send_hourly_promo, interval=3600, first=3600)
+
+    print("Bot aktif + auto promo tiap jam 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
