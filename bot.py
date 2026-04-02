@@ -46,7 +46,7 @@ def save_users(users):
 users = load_users()
 
 # ===============================
-# KEYBOARD START (3 BUTTON)
+# KEYBOARD START
 # ===============================
 def start_keyboard():
     return InlineKeyboardMarkup([
@@ -60,7 +60,7 @@ def start_keyboard():
     ])
 
 # ===============================
-# KEYBOARD VIP (11 LIST)
+# KEYBOARD VIP
 # ===============================
 def vip_keyboard():
     return InlineKeyboardMarkup([
@@ -196,13 +196,23 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "testimoni":
-        # kirim 4 foto
-        for msg_id in [7, 8, 9, 10]:
+        # kirim 3 foto biasa
+        for msg_id in [7, 8, 9]:
             await context.bot.copy_message(
                 chat_id=query.message.chat_id,
                 from_chat_id=-1003748208059,
                 message_id=msg_id
             )
+
+        # foto terakhir + tombol kembali
+        await context.bot.copy_message(
+            chat_id=query.message.chat_id,
+            from_chat_id=-1003748208059,
+            message_id=10,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
+            ])
+        )
 
     elif query.data == "referral":
         bot_username = (await context.bot.get_me()).username
@@ -216,9 +226,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
-    # ===============================
-    # VIP HANDLER
-    # ===============================
     elif query.data in ["vip_hijabers", "vip_tiktok"]:
         await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=5)
         await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
