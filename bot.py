@@ -46,18 +46,21 @@ def save_users(users):
 users = load_users()
 
 # ===============================
-# KEYBOARD START
+# KEYBOARD START (3 BUTTON)
 # ===============================
 def start_keyboard():
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("🔥 VVIP", callback_data="vvip"),
             InlineKeyboardButton("📢 Undang Teman", callback_data="referral"),
+        ],
+        [
+            InlineKeyboardButton("⭐ Testimoni", callback_data="testimoni"),
         ]
     ])
 
 # ===============================
-# KEYBOARD VIP
+# KEYBOARD VIP (11 LIST)
 # ===============================
 def vip_keyboard():
     return InlineKeyboardMarkup([
@@ -65,10 +68,12 @@ def vip_keyboard():
         [InlineKeyboardButton("📁 VIP TIKTOK", callback_data="vip_tiktok")],
         [InlineKeyboardButton("📁 VIP RUSSIA", callback_data="vip_ometv")],
         [InlineKeyboardButton("📁 VIP INDONESIA", callback_data="vip_kolpri")],
-        [InlineKeyboardButton("📁 VIP RANDOM", callback_data="vip_premium")],
-        [InlineKeyboardButton("📁 VIP PRENIUM", callback_data="vip_random")],
+        [InlineKeyboardButton("📁 VIP RANDOM", callback_data="vip_random")],
+        [InlineKeyboardButton("📁 VIP PRENIUM", callback_data="vip_premium")],
         [InlineKeyboardButton("📁 VIP BOCIL [A]", callback_data="vip_bocil_a")],
         [InlineKeyboardButton("📁 VIP BOCIL [B]", callback_data="vip_bocil_b")],
+        [InlineKeyboardButton("📁 VIP ANIME HENTAI", callback_data="vip_anime")],
+        [InlineKeyboardButton("📁 VIP GAME HENTAI", callback_data="vip_game")],
         [InlineKeyboardButton("🛒 Ambil Semua VIP", callback_data="vip_all")],
         [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
     ])
@@ -92,7 +97,7 @@ def get_payment_text(user, amount):
     )
 
 # ===============================
-# PROMO (DIKIRIM TIAP JAM)
+# PROMO
 # ===============================
 async def send_hourly_promo(context: ContextTypes.DEFAULT_TYPE):
     for user_id in users:
@@ -120,16 +125,14 @@ async def send_hourly_promo(context: ContextTypes.DEFAULT_TYPE):
             print(f"Gagal kirim ke {user_id}:", e)
 
 # ===============================
-# REMINDER BAYAR (3 MENIT)
+# REMINDER
 # ===============================
 async def payment_reminder(context: ContextTypes.DEFAULT_TYPE):
     user_id = context.job.data
 
     text = (
         "⏰ <b>WAKTU HAMPIR HABIS!</b>\n\n"
-        "Sisa waktu pembayaran kamu tinggal sedikit lagi!\n\n"
-        "Segera selesaikan pembayaran sebelum hangus ❌\n\n"
-        "🔥 Jangan sampai slot VVIP kamu diambil orang lain!"
+        "Segera selesaikan pembayaran sebelum hangus ❌"
     )
 
     try:
@@ -142,17 +145,13 @@ async def payment_reminder(context: ContextTypes.DEFAULT_TYPE):
         print(f"Gagal kirim reminder ke {user_id}:", e)
 
 # ===============================
-# HANDLE FOTO
+# FOTO
 # ===============================
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "✅ <b>PEMBAYARAN SEDANG DI VERIFIKASI</b>\n\n"
-        "Bukti transfer kamu sudah kami terima.\n"
-        "Silakan tunggu sebentar, admin akan memproses.\n\n"
-        "🙏 Mohon tidak spam kirim bukti ya."
+    await update.message.reply_text(
+        "✅ Bukti diterima, sedang diverifikasi.",
+        parse_mode="HTML"
     )
-
-    await update.message.reply_text(text, parse_mode="HTML")
 
 # ===============================
 # START
@@ -182,7 +181,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ===============================
-# HANDLE BUTTON
+# BUTTON HANDLER
 # ===============================
 async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -196,41 +195,45 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
 
+    elif query.data == "testimoni":
+        # kirim 4 foto
+        for msg_id in [7, 8, 9, 10]:
+            await context.bot.copy_message(
+                chat_id=query.message.chat_id,
+                from_chat_id=-1003748208059,
+                message_id=msg_id
+            )
+
     elif query.data == "referral":
         bot_username = (await context.bot.get_me()).username
         ref_link = f"https://t.me/{bot_username}?start={user.id}"
 
         await query.edit_message_caption(
-            caption=(
-                "📢 <b>UNDANG TEMAN</b>\n\n"
-                "Undang <b>10 teman</b> untuk membuka fitur VVIP GRATIS 🔥\n\n"
-                f"🔗 Link kamu:\n{ref_link}"
-            ),
+            caption=f"🔗 Link kamu:\n{ref_link}",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Kembali ke Menu Utama", callback_data="menu")]
+                [InlineKeyboardButton("🔙 Kembali", callback_data="menu")]
             ]),
             parse_mode="HTML"
         )
 
+    # ===============================
+    # VIP HANDLER
+    # ===============================
     elif query.data in ["vip_hijabers", "vip_tiktok"]:
         await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=5)
         await query.message.reply_text(get_payment_text(user, "10.000"), parse_mode="HTML")
-        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
-    elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium"]:
+    elif query.data in ["vip_ometv", "vip_kolpri", "vip_premium", "vip_anime"]:
         await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=4)
         await query.message.reply_text(get_payment_text(user, "15.000"), parse_mode="HTML")
-        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
-    elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b"]:
+    elif query.data in ["vip_random", "vip_bocil_a", "vip_bocil_b", "vip_game"]:
         await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=2)
         await query.message.reply_text(get_payment_text(user, "20.000"), parse_mode="HTML")
-        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data == "vip_all":
         await context.bot.copy_message(chat_id=query.message.chat_id, from_chat_id=-1003748208059, message_id=6)
         await query.message.reply_text(get_payment_text(user, "50.000"), parse_mode="HTML")
-        context.job_queue.run_once(payment_reminder, 180, data=user.id)
 
     elif query.data == "menu":
         await query.edit_message_caption(
@@ -252,15 +255,13 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_button))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    # PROMO TIAP 1 JAM
     app.job_queue.run_repeating(send_hourly_promo, interval=3600, first=3600)
 
-    print("Bot aktif + auto promo tiap jam 🚀")
+    print("Bot aktif 🚀")
 
     try:
         app.run_polling(drop_pending_updates=True)
     except Exception:
-        print("ERROR:")
         traceback.print_exc()
 
 if __name__ == "__main__":
