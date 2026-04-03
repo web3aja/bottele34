@@ -25,7 +25,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 USER_FILE = "users.json"
 DAILY_FILE = "daily_users.json"
 
-ADMIN_ID = 123456789  # GANTI ID LU
+ADMIN_ID = 7640270845  # GANTI ID LU
 
 # ===============================
 # LOAD & SAVE USER
