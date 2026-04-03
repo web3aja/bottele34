@@ -25,7 +25,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 USER_FILE = "users.json"
 DAILY_FILE = "daily_users.json"
 
-ADMIN_ID = 7640270845  # GANTI ID LU
+ADMIN_ID = 123456789  # GANTI ID LU
 
 # ===============================
 # LOAD & SAVE USER
@@ -62,21 +62,25 @@ users = load_users()
 daily_users = load_daily()
 
 # ===============================
-# KEYBOARD START
+# KEYBOARD START (ADMIN ONLY USER BUTTON)
 # ===============================
-def start_keyboard():
-    return InlineKeyboardMarkup([
+def start_keyboard(user_id):
+    buttons = [
         [
             InlineKeyboardButton("🔥 VVIP", callback_data="vvip"),
             InlineKeyboardButton("📢 Undang Teman", callback_data="referral"),
         ],
         [
             InlineKeyboardButton("⭐ Testimoni", callback_data="testimoni"),
-        ],
-        [
-            InlineKeyboardButton("👥 User", callback_data="user_count"),
         ]
-    ])
+    ]
+
+    if user_id == ADMIN_ID:
+        buttons.append(
+            [InlineKeyboardButton("👥 User", callback_data="user_count")]
+        )
+
+    return InlineKeyboardMarkup(buttons)
 
 # ===============================
 # KEYBOARD VIP
@@ -136,7 +140,7 @@ async def send_hourly_promo(context: ContextTypes.DEFAULT_TYPE):
                     "Bebas intip video viral fresh tiap jam 🔥\n\n"
                     "Jangan sampai ketinggalan!"
                 ),
-                reply_markup=start_keyboard(),
+                reply_markup=start_keyboard(user_id),
                 parse_mode="HTML"
             )
 
@@ -179,12 +183,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # total user
     if user.id not in users:
         users.add(user.id)
         save_users(users)
 
-    # daily user
     if today not in daily_users:
         daily_users[today] = []
 
@@ -205,7 +207,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id=update.effective_chat.id,
         message_id=msg.message_id,
         caption=f"Halo {mention} selamat datang di <b>VVIP PEMERSATU BANGSA</b>",
-        reply_markup=start_keyboard(),
+        reply_markup=start_keyboard(user.id),
         parse_mode="HTML"
     )
 
@@ -217,7 +219,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = query.from_user
     await query.answer()
 
-    # ================= USER COUNT =================
+    # USER COUNT (ADMIN ONLY)
     if query.data == "user_count":
         if user.id != ADMIN_ID:
             await query.answer("❌ Tidak diizinkan", show_alert=True)
@@ -225,10 +227,12 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         today = datetime.now().strftime("%Y-%m-%d")
         total = len(daily_users.get(today, []))
+        total_all = len(users)
 
-        await query.answer(f"{total} user hari ini", show_alert=True)
+        await query.message.reply_text(
+            f"👥 Hari ini: {total}\n👥 Total semua: {total_all}"
+        )
 
-    # ================= SEMUA FITUR LAMA =================
     elif query.data == "vvip":
         await query.edit_message_caption(
             caption="<b>📚 Daftar VVIP</b>\n\nPilih paket 👇",
@@ -284,7 +288,7 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "menu":
         await query.edit_message_caption(
             caption="Klik tombol di bawah untuk membuka menu 🔥",
-            reply_markup=start_keyboard()
+            reply_markup=start_keyboard(user.id)
         )
 
 # ===============================
