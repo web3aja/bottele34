@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import traceback
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -22,6 +23,9 @@ logging.basicConfig(
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 USER_FILE = "users.json"
+DAILY_FILE = "daily_users.json"
+
+ADMIN_ID = 7640270845  # GANTI ID LU
 
 # ===============================
 # LOAD & SAVE USER
@@ -43,7 +47,19 @@ def save_users(users):
     except Exception as e:
         print("Gagal save users:", e)
 
+# ===============================
+# DAILY USER
+# ===============================
+def load_daily():
+    if os.path.exists(DAILY_FILE):
+        return json.load(open(DAILY_FILE))
+    return {}
+
+def save_daily(data):
+    json.dump(data, open(DAILY_FILE, "w"))
+
 users = load_users()
+daily_users = load_daily()
 
 # ===============================
 # KEYBOARD START
@@ -56,6 +72,9 @@ def start_keyboard():
         ],
         [
             InlineKeyboardButton("⭐ Testimoni", callback_data="testimoni"),
+        ],
+        [
+            InlineKeyboardButton("👥 User", callback_data="user_count"),
         ]
     ])
 
@@ -158,10 +177,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ===============================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    today = datetime.now().strftime("%Y-%m-%d")
 
+    # total user
     if user.id not in users:
         users.add(user.id)
         save_users(users)
+
+    # daily user
+    if today not in daily_users:
+        daily_users[today] = []
+
+    if user.id not in daily_users[today]:
+        daily_users[today].append(user.id)
+        save_daily(daily_users)
 
     name = user.last_name if user.last_name else user.first_name
     mention = f'<a href="tg://user?id={user.id}">{name}</a>'
@@ -188,7 +217,19 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = query.from_user
     await query.answer()
 
-    if query.data == "vvip":
+    # ================= USER COUNT =================
+    if query.data == "user_count":
+        if user.id != ADMIN_ID:
+            await query.answer("❌ Tidak diizinkan", show_alert=True)
+            return
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        total = len(daily_users.get(today, []))
+
+        await query.answer(f"{total} user hari ini", show_alert=True)
+
+    # ================= SEMUA FITUR LAMA =================
+    elif query.data == "vvip":
         await query.edit_message_caption(
             caption="<b>📚 Daftar VVIP</b>\n\nPilih paket 👇",
             reply_markup=vip_keyboard(),
@@ -196,7 +237,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     elif query.data == "testimoni":
-        # kirim 3 foto biasa
         for msg_id in [7, 8, 9]:
             await context.bot.copy_message(
                 chat_id=query.message.chat_id,
@@ -204,7 +244,6 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message_id=msg_id
             )
 
-        # foto terakhir + tombol kembali
         await context.bot.copy_message(
             chat_id=query.message.chat_id,
             from_chat_id=-1003748208059,
